@@ -1,93 +1,125 @@
+// ignore_for_file: unnecessary_new
+
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
+class Todo {
+  Todo({required this.name, required this.checked});
+  final String name;
+  bool checked;
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+void main() {
+  runApp(const TodoApp());
+}
 
-  // This widget is the root of your application.
+class TodoApp extends StatelessWidget {
+  const TodoApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Todo App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: new TodoList(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-
-  final String title;
-
+class TodoList extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _TodoListState createState() => new _TodoListState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _TodoListState extends State<TodoList> {
+  final TextEditingController _textFieldController = TextEditingController();
+  final List<Todo> _todos = <Todo>[];
 
-  void _incrementCounter() {
+  Future<void> _displayDialog() async {
+    return showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Add a new todo item'),
+            content: TextField(
+              controller: _textFieldController,
+              decoration: const InputDecoration(hintText: 'Type your new todo'),
+            ),
+            actions: <Widget>[
+              TextButton(
+                  child: const Text('add'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _addTodoItem(_textFieldController.text);
+                  })
+            ],
+          );
+        });
+  }
+
+  void _addTodoItem(String name) {
     setState(() {
-      _counter++;
+      _todos.add(Todo(name: name, checked: false));
+    });
+    _textFieldController.clear();
+  }
+
+  void _handleTodoChange(Todo todo) {
+    setState(() {
+      todo.checked = !todo.checked;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+    return new Scaffold(
+      appBar: new AppBar(
+        title: const Text('Todo list'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+      body: ListView(
+        padding: EdgeInsets.symmetric(vertical: 8.0),
+        children: _todos.map((Todo todo) {
+	      return TodoItem(
+	        todo: todo,
+	        onTodoChanged: _handleTodoChange,
+	      );
+	    }).toList(),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        onPressed: () => _displayDialog(),
+        tooltip: 'Add Item',
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+  //
+}
+
+class TodoItem extends StatelessWidget {
+  TodoItem({required this.todo, required this.onTodoChanged})
+      : super(key: ObjectKey(todo));
+
+  final Todo todo;
+  final onTodoChanged;
+
+  TextStyle? _getTextStyle(bool checked) {
+    if (!checked) return null;
+
+    return const TextStyle(
+      color: Colors.black54,
+      decoration: TextDecoration.lineThrough,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: () {
+        onTodoChanged(todo);
+      },
+      leading: CircleAvatar(
+        child: Text(todo.name[0]),
+      ),
+      title: Text(todo.name, style: _getTextStyle(todo.checked)),
     );
   }
 }
